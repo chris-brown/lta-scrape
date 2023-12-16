@@ -1,4 +1,4 @@
-name: Run NPM Script
+name: LTA Website scrape
 
 on:
   schedule:
@@ -15,3 +15,11 @@ jobs:
         uses: cypress-io/github-action@v6
         with:
           spec: cypress/e2e/lta-website.cy.js
+      - name: Archive Cypress Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: cypress-results
+          path: |
+            combined.csv
+            u9csv
+            u10.csv
