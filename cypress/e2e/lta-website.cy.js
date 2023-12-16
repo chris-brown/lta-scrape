@@ -2,7 +2,7 @@ describe("Scrape LTA website", () => {
 
   const writeToFile = title => (csvContent) => {
       cy.writeFile(
-        `${title}.csv`,
+        `files/${title}.csv`,
         ["player,id,year,county,form,tournaments", ...csvContent].join("\n")
       );
     };
