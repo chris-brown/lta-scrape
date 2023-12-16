@@ -3,6 +3,7 @@ name: Run NPM Script
 on:
   schedule:
     - cron: '0 11 * * FRI'  # At UTC11:00 on Friday
+  workflow_dispatch:
 
 jobs:
   cypress-run:
