@@ -26,7 +26,6 @@ jobs:
       - name: Upload to storage container
         uses: azure/CLI@v1
         with:
-          azcliversion: 2.30.0
+          azcliversion: 2.51.0
           inlineScript: |
-            echo 'az storage blob upload-batch --account-name ltascrape  --sas-token ''${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}'' --destination files --source files --pattern ''*.csv'' --overwrite true'
-            az storage blob upload-batch --account-name ltascrape  --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --destination files --source files --pattern '*.csv' --overwrite true
+            az storage blob upload-batch --account-name ltascrape  --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --destination files --source files --pattern '*.csv' --overwrite
