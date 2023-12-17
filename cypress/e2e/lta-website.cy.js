@@ -67,7 +67,7 @@ describe("Scrape LTA website", () => {
     scrape(csvContent, page, maxPage).then(writeToFile('u10'));
   });
 
-  it.only("combined", () => {
+  it("combined", () => {
     cy.visit(
       "https://competitions.lta.org.uk/ranking/ranking.aspx?rid=301"
     );
