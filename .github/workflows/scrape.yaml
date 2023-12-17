@@ -28,4 +28,4 @@ jobs:
         with:
           azcliversion: 2.30.0
           inlineScript: |
-            az storage blob upload-batch --account-name ltascrape  --account-key ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }} --destination files --source files --pattern '*.csv' --overwrite true
+            az storage blob upload-batch --account-name ltascrape  --sas-token ${{ secrets.AZURE_STORAGE_CONNECTION_STRING }} --destination files --source files --pattern '*.csv' --overwrite true
