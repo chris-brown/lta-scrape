@@ -1,6 +1,6 @@
 describe("Scrape LTA website", () => {
   const writeToFile =
-    (title, headers = "player,id,year,county,form,tournaments") =>
+    (title, headers = "player,empty,id,year,county,form,tournaments") =>
     (csvContent) => {
       cy.writeFile(`files/${title}.csv`, [headers, ...csvContent].join("\n"));
     };
@@ -73,7 +73,7 @@ describe("Scrape LTA website", () => {
     scrape(csvContent, page, 5).then(
       writeToFile(
         "combined",
-        "rank,rank_up,empty,player,id,year,county,singles,doubles,tournaments,tournamentsused,form"
+        "rank,rank_up,empty,player,empty2,id,year,wtnsingles,wtndoubles,county,singles,doubles,tournaments,tournamentsused,form"
       )
     );
   });
