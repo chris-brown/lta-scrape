@@ -23,7 +23,7 @@ describe("Scrape LTA website", () => {
             })
             .then(() => {
               page++;
-              cy.get('a[title="Next"]', { force: true }).click();
+              cy.get('a[title="Next"]', { force: true }).click({ force: true });
               if (page < maxPage) return checkButtonAndLoop();
             });
         } else {
@@ -70,14 +70,6 @@ describe("Scrape LTA website", () => {
     const csvContent = [];
     let page = 1;
 
-    const content = scrape(csvContent, page, 4);
-
-    console.log("content", content);
-
-    cy.visit("https://competitions.lta.org.uk/ranking/ranking.aspx?rid=301");
-
-    cy.contains("a", "11U Boys").click();
-    cy.get("select#_pagesize").select("100", { force: true });
     scrape(csvContent, page, 5).then(
       writeToFile(
         "combined",
