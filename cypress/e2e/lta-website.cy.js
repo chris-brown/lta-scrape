@@ -64,13 +64,13 @@ describe("Scrape LTA website", () => {
   it("combined", () => {
     cy.visit("https://competitions.lta.org.uk/ranking/ranking.aspx?rid=301");
     cy.contains("Accept").click();
-    cy.contains("a", "11U Girls").click();
+    cy.contains("a", "14U Girls").click();
     cy.get("select#_pagesize").select("100", { force: true });
 
     const csvContent = [];
     let page = 1;
 
-    scrape(csvContent, page, 5).then(
+    scrape(csvContent, page, 15).then(
       writeToFile(
         "combined",
         "rank,rank_up,empty,player,empty2,id,year,wtnsingles,wtndoubles,county,singles,doubles,tournaments,tournamentsused,form"
