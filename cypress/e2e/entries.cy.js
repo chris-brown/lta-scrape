@@ -85,22 +85,16 @@ describe("Scrape LTA tournament entry lists", () => {
           const cells = tr.querySelectorAll("td");
           if (cells.length < 2) return;
 
-          let player, status, seed;
+          let player;
           if (isEntriesTable) {
-            // Entries table: Status, Player, (empty), Seed
-            status = cells[0].innerText.trim();
             player = cells[1].innerText.trim();
-            seed = cells.length > 3 ? cells[3].innerText.trim() : "";
           } else {
-            // Online entries table: Name, Date of entry
             player = cells[0].innerText.trim();
-            status = "Online entry";
-            seed = "";
           }
 
           if (player) {
             csvContent.push(
-              `"${name}","${tournamentId}","${label}","${player}","${status}","${seed}"`
+              `"${name}","${tournamentId}","${label}","${player}"`
             );
           }
         });
@@ -199,7 +193,7 @@ describe("Scrape LTA tournament entry lists", () => {
       });
 
       const headers =
-        '"tournament","tournament_id","event","player","status","seed","rank","wtnsingles","form"';
+        '"tournament","tournament_id","event","player","rank","wtnsingles","form"';
       cy.writeFile("files/entries.csv", [headers, ...enriched].join("\n"));
     });
   });
