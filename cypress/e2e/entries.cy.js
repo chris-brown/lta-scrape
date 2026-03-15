@@ -54,51 +54,31 @@ describe("Scrape LTA tournament entry lists", () => {
     cy.visit(href);
 
     cy.get("body").then(($eventBody) => {
+      // The first table on the page is always the active entries.
+      // Subsequent tables are withdrawn/other — skip them.
       const tables = $eventBody.find("table");
+      if (tables.length === 0) return;
 
-      // Find the entries table (has "Player" header), not "Online entries" (has "Name" header)
-      let targetTable = null;
-      tables.each((_, table) => {
-        const headerText = table.querySelector("tr")?.innerText || "";
-        if (headerText.includes("Player")) {
-          targetTable = table;
+      const firstTable = tables.first()[0];
+      const headerRow = firstTable.querySelector("tr")?.innerText || "";
+      const isPlayerTable = headerRow.includes("Player");
+
+      const rows = firstTable.querySelectorAll("tr");
+      rows.forEach((tr, i) => {
+        if (i === 0) return;
+        const cells = tr.querySelectorAll("td");
+        if (cells.length < 2) return;
+
+        const player = isPlayerTable
+          ? cells[1].innerText.trim()
+          : cells[0].innerText.trim();
+
+        if (player) {
+          csvContent.push(
+            `"${name}","${tournamentId}","${label}","${player}"`
+          );
         }
       });
-
-      // Fall back to "Online entries" table if no "Entries" table
-      if (!targetTable) {
-        tables.each((_, table) => {
-          const headerText = table.querySelector("tr")?.innerText || "";
-          if (headerText.includes("Name")) {
-            targetTable = table;
-          }
-        });
-      }
-
-      if (targetTable) {
-        const headerText = targetTable.querySelector("tr")?.innerText || "";
-        const isEntriesTable = headerText.includes("Player");
-
-        const rows = targetTable.querySelectorAll("tr");
-        rows.forEach((tr, i) => {
-          if (i === 0) return;
-          const cells = tr.querySelectorAll("td");
-          if (cells.length < 2) return;
-
-          let player;
-          if (isEntriesTable) {
-            player = cells[1].innerText.trim();
-          } else {
-            player = cells[0].innerText.trim();
-          }
-
-          if (player) {
-            csvContent.push(
-              `"${name}","${tournamentId}","${label}","${player}"`
-            );
-          }
-        });
-      }
 
       scrapeEventPage(name, tournamentId, eventLinks, index + 1, csvContent);
     });
