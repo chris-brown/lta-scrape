@@ -14,20 +14,12 @@ describe("Scrape LTA tournaments", () => {
     5: { index: 4, id: "5" },
   };
 
-  const GAME_TYPES = {
-    "Girls Singles": { index: 1, id: "2" },
-    "Girls Doubles": { index: 3, id: "4" },
-  };
-
-  const SEARCHES = [
-    { ageGroup: "12U", grades: [1, 2, 3] },
-    { ageGroup: "14U", grades: [1, 2, 3, 4, 5] },
-    { ageGroup: "16U", grades: [1, 2, 3, 4, 5] },
-  ];
+  const TARGET_AGE_GROUPS = ["12U", "14U", "16U"];
+  const TARGET_GRADES = [1, 2, 3, 4, 5];
 
   const POSTCODE = Cypress.env("POSTCODE") || "SET_POSTCODE_ENV_VAR";
 
-  const buildSearchUrl = (ageGroup, grades, page = 1) => {
+  const buildSearchUrl = (page = 1) => {
     const today = new Date();
     const endDate = new Date(today);
     endDate.setMonth(endDate.getMonth() + 3);
@@ -41,26 +33,24 @@ describe("Scrape LTA tournaments", () => {
     params.set("EndDate", endDateStr);
     params.set("LocationFilterType", "0");
     params.set("PostalCode", POSTCODE);
-    params.set("StatusFilterID", "2");
     params.set("Distance", "500");
 
-    for (let i = 0; i < 7; i++) {
-      const match = Object.values(GAME_TYPES).find((g) => g.index === i);
-      params.set(`EventGameTypeIDList[${i}]`, match ? match.id : "false");
-    }
-
     for (let i = 0; i < 22; i++) {
-      const ag = AGE_GROUPS[ageGroup];
-      params.set(`AgeGroupIDList[${i}]`, i === ag.index ? ag.id : "false");
+      const match = TARGET_AGE_GROUPS
+        .map((ag) => AGE_GROUPS[ag])
+        .find((ag) => ag.index === i);
+      params.set(`AgeGroupIDList[${i}]`, match ? match.id : "false");
     }
 
     for (let i = 0; i < 8; i++) {
-      const match = grades.map((g) => GRADES[g]).find((g) => g.index === i);
+      const match = TARGET_GRADES
+        .map((g) => GRADES[g])
+        .find((g) => g.index === i);
       params.set(`GradingIDList[${i}]`, match ? match.id : "false");
     }
 
     params.set("page", String(page));
-    return `https://competitions.lta.org.uk/find?${params.toString()}`;
+    return `https://competitions.lta.org.uk/find/tournament?${params.toString()}`;
   };
 
   const acceptCookies = () => {
@@ -71,7 +61,7 @@ describe("Scrape LTA tournaments", () => {
     });
   };
 
-  const extractResultsFromPage = (ageGroup, csvContent) => {
+  const extractResultsFromPage = (csvContent) => {
     cy.get("ul#searchResultArea > li.list__item").each(($li) => {
       const href = $li.find("a.media__img").first().prop("href");
       if (!href) return;
@@ -87,20 +77,27 @@ describe("Scrape LTA tournaments", () => {
 
       const gradeTag = $li.find("span.tag--soft").filter((_, el) => el.innerText.trim().startsWith("Grade")).first().text().trim();
 
+      // Extract age group tags (e.g. "12U", "14U")
+      const ageTags = [];
+      $li.find("span.tag").each((_, el) => {
+        const text = el.innerText.trim();
+        if (/^\d+U$/.test(text)) ageTags.push(text);
+      });
+      const ageGroup = ageTags.join(", ") || "";
+
       csvContent.push(
         `"${name}","${venue}","${ageGroup}","${gradeTag}","${startDate}","${distance}","${href}"`
       );
     });
   };
 
-  const collectAllPages = (ageGroup, csvContent) => {
-    extractResultsFromPage(ageGroup, csvContent);
-
+  const loadAllResults = () => {
     cy.get("body").then(($body) => {
-      if ($body.find('a[title="Next"]').length) {
-        cy.get('a[title="Next"]').click();
-        cy.get("ul#searchResultArea").should("be.visible");
-        collectAllPages(ageGroup, csvContent);
+      const loadMoreBtn = $body.find("#elem_loadmore:visible");
+      if (loadMoreBtn.length) {
+        cy.get("#elem_loadmore").click();
+        cy.wait(1500);
+        loadAllResults();
       }
     });
   };
@@ -108,21 +105,20 @@ describe("Scrape LTA tournaments", () => {
   it("scrapes all tournaments", () => {
     const csvContent = [];
 
-    SEARCHES.forEach(({ ageGroup, grades }) => {
-      const url = buildSearchUrl(ageGroup, grades);
-      cy.visit(url);
-      acceptCookies();
+    const url = buildSearchUrl();
+    cy.visit(url);
+    acceptCookies();
 
-      cy.get("h3")
-        .contains(/^\d+\sResults?$/)
-        .should("be.visible")
-        .invoke("text")
-        .then((text) => {
-          const count = parseInt(text);
-          if (count === 0) return;
-          collectAllPages(ageGroup, csvContent);
-        });
-    });
+    cy.get("h3")
+      .contains(/^\d+\sResults?$/)
+      .should("be.visible")
+      .invoke("text")
+      .then((text) => {
+        const count = parseInt(text);
+        if (count === 0) return;
+        loadAllResults();
+        extractResultsFromPage(csvContent);
+      });
 
     cy.then(() => {
       const headers = '"name","venue","age_group","grade","start_date","distance_miles","url"';
