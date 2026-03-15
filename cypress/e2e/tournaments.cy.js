@@ -35,6 +35,11 @@ describe("Scrape LTA tournaments", () => {
     params.set("PostalCode", POSTCODE);
     params.set("Distance", "500");
 
+    // Girls Singles only (index 1, id 2)
+    for (let i = 0; i < 7; i++) {
+      params.set(`EventGameTypeIDList[${i}]`, i === 1 ? "2" : "false");
+    }
+
     for (let i = 0; i < 22; i++) {
       const match = TARGET_AGE_GROUPS
         .map((ag) => AGE_GROUPS[ag])
