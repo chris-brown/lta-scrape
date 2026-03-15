@@ -85,8 +85,12 @@ describe("Scrape LTA tournaments", () => {
       });
       const ageGroup = ageTags.join(", ") || "";
 
+      // Extract entry deadline countdown and online entry URL
+      const entryCountdown = $li.find("span.btn__label").first().text().trim();
+      const entryUrl = $li.find('a[href*="onlineentry"]').first().prop("href") || "";
+
       csvContent.push(
-        `"${name}","${venue}","${ageGroup}","${gradeTag}","${startDate}","${distance}","${href}"`
+        `"${name}","${venue}","${ageGroup}","${gradeTag}","${startDate}","${distance}","${entryCountdown}","${entryUrl}","${href}"`
       );
     });
   };
@@ -121,7 +125,7 @@ describe("Scrape LTA tournaments", () => {
       });
 
     cy.then(() => {
-      const headers = '"name","venue","age_group","grade","start_date","distance_miles","url"';
+      const headers = '"name","venue","age_group","grade","start_date","distance_miles","entry_closes","entry_url","url"';
       cy.writeFile("files/tournaments.csv", [headers, ...csvContent].join("\n"));
     });
   });
