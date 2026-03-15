@@ -1,36 +1,35 @@
-name: LTA Weekly Rankings & Tournaments
+name: LTA Daily Entry Lists
 
 on:
   schedule:
-    - cron: '0 11 * * FRI'  # At UTC11:00 on Friday
+    - cron: '0 8 * * *'  # Daily at UTC08:00
   workflow_dispatch:
 
 jobs:
-  cypress-run:
-    name: Cypress scrape
+  entries-scrape:
+    name: Scrape entry lists
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Cypress rankings scrape
-        uses: cypress-io/github-action@v6
-        with:
-          spec: cypress/e2e/lta-website.cy.js
       - name: Cypress tournaments scrape
         uses: cypress-io/github-action@v6
         with:
           spec: cypress/e2e/tournaments.cy.js
-          install: false
         env:
           CYPRESS_POSTCODE: ${{ secrets.POSTCODE }}
-      - name: Archive Cypress Artifact
+      - name: Cypress entries scrape
+        uses: cypress-io/github-action@v6
+        with:
+          spec: cypress/e2e/entries.cy.js
+          browser: chrome
+          install: false
+      - name: Archive entries
         uses: actions/upload-artifact@v4
         with:
-          name: cypress-results
+          name: entries-results
           path: |
-            files/combined.csv
-            files/u9.csv
-            files/u10.csv
             files/tournaments.csv
+            files/entries.csv
       - name: Upload to storage container
         uses: azure/CLI@v1
         with:

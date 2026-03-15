@@ -55,16 +55,48 @@ describe("Scrape LTA tournament entry lists", () => {
 
     cy.get("body").then(($eventBody) => {
       const tables = $eventBody.find("table");
-      if (tables.length > 0) {
-        const rows = tables.first().find("tr");
-        rows.each((i, tr) => {
+
+      // Find the entries table (has "Player" header), not "Online entries" (has "Name" header)
+      let targetTable = null;
+      tables.each((_, table) => {
+        const headerText = table.querySelector("tr")?.innerText || "";
+        if (headerText.includes("Player")) {
+          targetTable = table;
+        }
+      });
+
+      // Fall back to "Online entries" table if no "Entries" table
+      if (!targetTable) {
+        tables.each((_, table) => {
+          const headerText = table.querySelector("tr")?.innerText || "";
+          if (headerText.includes("Name")) {
+            targetTable = table;
+          }
+        });
+      }
+
+      if (targetTable) {
+        const headerText = targetTable.querySelector("tr")?.innerText || "";
+        const isEntriesTable = headerText.includes("Player");
+
+        const rows = targetTable.querySelectorAll("tr");
+        rows.forEach((tr, i) => {
           if (i === 0) return;
           const cells = tr.querySelectorAll("td");
           if (cells.length < 2) return;
 
-          const status = cells[0].innerText.trim();
-          const player = cells[1].innerText.trim();
-          const seed = cells.length > 3 ? cells[3].innerText.trim() : "";
+          let player, status, seed;
+          if (isEntriesTable) {
+            // Entries table: Status, Player, (empty), Seed
+            status = cells[0].innerText.trim();
+            player = cells[1].innerText.trim();
+            seed = cells.length > 3 ? cells[3].innerText.trim() : "";
+          } else {
+            // Online entries table: Name, Date of entry
+            player = cells[0].innerText.trim();
+            status = "Online entry";
+            seed = "";
+          }
 
           if (player) {
             csvContent.push(
@@ -109,8 +141,32 @@ describe("Scrape LTA tournament entry lists", () => {
     });
   };
 
+  const buildRankingsLookup = (csv) => {
+    const lookup = {};
+    const lines = csv.split("\n");
+    // Skip 2 header rows
+    for (let i = 2; i < lines.length; i++) {
+      if (!lines[i].trim()) continue;
+      const fields = lines[i].split(",");
+      const player = (fields[3] || "").trim().toLowerCase();
+      if (!player) continue;
+      lookup[player] = {
+        rank: fields[0] || "",
+        wtnsingles: fields[7] || "",
+        form: fields[14] || "",
+      };
+    }
+    return lookup;
+  };
+
   it("scrapes entry lists for tournaments closing within 7 days", () => {
     const csvContent = [];
+    let rankings = {};
+
+    cy.readFile("files/combined.csv").then((csv) => {
+      rankings = buildRankingsLookup(csv);
+      cy.log(`Loaded ${Object.keys(rankings).length} players from rankings`);
+    });
 
     cy.readFile("files/tournaments.csv").then((csv) => {
       const closingSoon = parseTournamentsCSV(csv);
@@ -119,9 +175,32 @@ describe("Scrape LTA tournament entry lists", () => {
     });
 
     cy.then(() => {
+      // Enrich entries with ranking data
+      const enriched = csvContent.map((row) => {
+        // Parse player name from the row (4th field)
+        const fields = [];
+        let current = "";
+        let inQuotes = false;
+        for (let j = 0; j < row.length; j++) {
+          if (row[j] === '"') {
+            inQuotes = !inQuotes;
+          } else if (row[j] === "," && !inQuotes) {
+            fields.push(current);
+            current = "";
+          } else {
+            current += row[j];
+          }
+        }
+        fields.push(current);
+
+        const player = (fields[3] || "").trim().toLowerCase();
+        const data = rankings[player] || {};
+        return `${row},"${data.rank || ""}","${data.wtnsingles || ""}","${data.form || ""}"`;
+      });
+
       const headers =
-        '"tournament","tournament_id","event","player","status","seed"';
-      cy.writeFile("files/entries.csv", [headers, ...csvContent].join("\n"));
+        '"tournament","tournament_id","event","player","status","seed","rank","wtnsingles","form"';
+      cy.writeFile("files/entries.csv", [headers, ...enriched].join("\n"));
     });
   });
 });
