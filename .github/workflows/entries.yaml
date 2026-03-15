@@ -11,14 +11,16 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
+      - name: Create files directory
+        run: mkdir -p files && chmod 777 files
       - name: Download tournaments.csv from Azure
         uses: azure/CLI@v1
         with:
           azcliversion: 2.51.0
           inlineScript: |
-            mkdir -p files
             az storage blob download --account-name ltascrape --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --container-name files --name tournaments.csv --file files/tournaments.csv
             az storage blob download --account-name ltascrape --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --container-name files --name combined.csv --file files/combined.csv
+            chmod 666 files/*.csv
       - name: Cypress entries scrape
         uses: cypress-io/github-action@v6
         with:
