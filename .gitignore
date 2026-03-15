@@ -27,6 +27,7 @@ build/Release
 node_modules
 cypress/videos
 cypress/screenshots
+cypress/downloads
 js/*.js
 *.csv
 files/*
