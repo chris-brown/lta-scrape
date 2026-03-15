@@ -30,3 +30,4 @@ cypress/screenshots
 js/*.js
 *.csv
 files/*
+cypress.env.json
