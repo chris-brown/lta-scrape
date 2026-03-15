@@ -11,18 +11,26 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Cypress lta scrape run
+      - name: Cypress rankings scrape
         uses: cypress-io/github-action@v6
         with:
           spec: cypress/e2e/lta-website.cy.js
+      - name: Cypress tournaments scrape
+        uses: cypress-io/github-action@v6
+        with:
+          spec: cypress/e2e/tournaments.cy.js
+          install: false
+        env:
+          CYPRESS_POSTCODE: ${{ secrets.POSTCODE }}
       - name: Archive Cypress Artifact
         uses: actions/upload-artifact@v4
         with:
           name: cypress-results
           path: |
-            combined.csv
-            u9csv
-            u10.csv
+            files/combined.csv
+            files/u9.csv
+            files/u10.csv
+            files/tournaments.csv
       - name: Upload to storage container
         uses: azure/CLI@v1
         with:

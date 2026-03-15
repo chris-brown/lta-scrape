@@ -20,7 +20,7 @@ npx cypress run --spec cypress/e2e/tournaments.cy.js    # Run tournament scraper
 The scraping logic lives entirely in `cypress/e2e/`. Each file is an independent scraper:
 
 - **`lta-website.cy.js`** — Scrapes player rankings for U9, U10, and U16 Girls. Visits `competitions.lta.org.uk`, accepts cookies, selects 100-row page size, paginates, and writes to `files/u9.csv`, `files/u10.csv`, and `files/combined.csv`.
-- **`tournaments.cy.js`** — Scrapes tournament listings filtered by date/location/category, visits each tournament's fact sheet to extract start dates, writes to `files/tournaments.csv`.
+- **`tournaments.cy.js`** — Scrapes upcoming tournaments (rolling 3-month window) for U12 (Grades 1-3), U14 and U16 (Grades 1-5) girls singles and doubles nationwide. Uses postcode from `cypress.env.json` (locally) or `CYPRESS_POSTCODE` env var (CI) to calculate distances. Extracts name, venue, grade, start date, and distance from search result cards. Writes to `files/tournaments.csv`.
 
 Output CSVs go to `files/` (gitignored). The GitHub Actions workflow (`.github/workflows/scrape.yaml`) runs rankings scraping every Friday at 11:00 UTC, archives the CSVs, and uploads them to Azure Blob Storage via a SAS token stored in `AZURE_STORAGE_CONNECTION_STRING` secret.
 
