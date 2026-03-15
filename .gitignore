@@ -31,3 +31,4 @@ js/*.js
 *.csv
 files/*
 cypress.env.json
+.claude/settings.local.json
