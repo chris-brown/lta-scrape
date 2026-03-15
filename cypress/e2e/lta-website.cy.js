@@ -64,7 +64,7 @@ describe("Scrape LTA website", () => {
   it("combined", () => {
     cy.visit("https://competitions.lta.org.uk/ranking/ranking.aspx?rid=301");
     cy.contains("Accept").click();
-    cy.contains("a", "14U Girls").click();
+    cy.contains("a", "16U Girls").click();
     cy.get("select#_pagesize").select("100", { force: true });
 
     const csvContent = [];
