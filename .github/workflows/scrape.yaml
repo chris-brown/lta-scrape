@@ -5,6 +5,10 @@ on:
     - cron: '0 11 * * FRI'  # At UTC11:00 on Friday
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   cypress-run:
     name: Cypress scrape
@@ -31,9 +35,11 @@ jobs:
             files/u9.csv
             files/u10.csv
             files/tournaments.csv
-      - name: Upload to storage container
-        uses: azure/CLI@v1
+      - name: Azure login
+        uses: azure/login@v3
         with:
-          azcliversion: 2.51.0
-          inlineScript: |
-            az storage blob upload-batch --account-name ltascrape  --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --destination files --source files --pattern '*.csv' --overwrite
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Upload to storage container
+        run: az storage blob upload-batch --account-name ltascrape --destination files --source files --pattern '*.csv' --overwrite --auth-mode login

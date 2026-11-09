@@ -26,14 +26,29 @@ describe("Scrape LTA tournament entry lists", () => {
       fields.push(current);
 
       const name = fields[0] || "";
+      const startDate = fields[4] || "";
       const entryCloses = fields[6] || "";
       const url = fields[8] || "";
 
-      const match = entryCloses.match(/^(\d+)([dh])$/);
-      if (!match) continue;
-      const daysLeft =
-        match[2] === "d" ? parseInt(match[1]) : parseInt(match[1]) / 24;
-      if (daysLeft > 7) continue;
+      // Include if entry countdown is within 7 days
+      let include = false;
+      const countdownMatch = entryCloses.match(/^(\d+)([dh])$/);
+      if (countdownMatch) {
+        const daysLeft =
+          countdownMatch[2] === "d" ? parseInt(countdownMatch[1]) : parseInt(countdownMatch[1]) / 24;
+        if (daysLeft <= 7) include = true;
+      }
+
+      // Also include if start date is within 14 days (catches tournaments
+      // where entry countdown wasn't captured in the search results)
+      if (!include && startDate) {
+        const start = new Date(startDate);
+        const today = new Date();
+        const daysUntilStart = (start - today) / (1000 * 60 * 60 * 24);
+        if (daysUntilStart >= 0 && daysUntilStart <= 14) include = true;
+      }
+
+      if (!include) continue;
 
       const idMatch = url.match(/[?&]id=([^&]+)/i);
       if (!idMatch) continue;
