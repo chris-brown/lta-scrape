@@ -5,6 +5,10 @@ on:
     - cron: '0 8 * * *'  # Daily at UTC08:00
   workflow_dispatch:
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   entries-scrape:
     name: Scrape entry lists
@@ -12,15 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Create files directory
-        run: mkdir -p files && chmod 777 files
-      - name: Download tournaments.csv from Azure
-        uses: azure/CLI@v1
+        run: mkdir -p files
+      - name: Azure login
+        uses: azure/login@v3
         with:
-          azcliversion: 2.51.0
-          inlineScript: |
-            az storage blob download --account-name ltascrape --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --container-name files --name tournaments.csv --file files/tournaments.csv
-            az storage blob download --account-name ltascrape --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --container-name files --name combined.csv --file files/combined.csv
-            chmod 666 files/*.csv
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Download tournaments.csv from Azure
+        run: |
+          az storage blob download --account-name ltascrape --container-name files --name tournaments.csv --file files/tournaments.csv --auth-mode login
+          az storage blob download --account-name ltascrape --container-name files --name combined.csv --file files/combined.csv --auth-mode login
       - name: Cypress entries scrape
         uses: cypress-io/github-action@v6
         with:
@@ -31,9 +37,11 @@ jobs:
         with:
           name: entries-results
           path: files/entries.csv
-      - name: Upload entries to Azure
-        uses: azure/CLI@v1
+      - name: Azure login (refresh)
+        uses: azure/login@v3
         with:
-          azcliversion: 2.51.0
-          inlineScript: |
-            az storage blob upload --account-name ltascrape --sas-token '${{ secrets.AZURE_STORAGE_CONNECTION_STRING }}' --container-name files --name entries.csv --file files/entries.csv --overwrite
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          allow-no-subscriptions: true
+      - name: Upload entries to Azure
+        run: az storage blob upload --account-name ltascrape --container-name files --name entries.csv --file files/entries.csv --overwrite --auth-mode login
